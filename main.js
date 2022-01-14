@@ -1,4 +1,5 @@
 import './style.css';
+import { attractors } from './attractors';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
@@ -6,17 +7,21 @@ import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 let settings = {
   numPoints: 200,
-  attractor: lorenzAttractor,
+  attractor: attractors.Lorenz,
+  enableTrails: true,
   dt: 0.003
 };
 let points = [];
+let scene, camera, renderer;
 
 
 function createGUI() {
   const gui = new GUI( { name: 'Settings' } );
-  gui.add(settings, 'dt',  0.001, 0.1).name('Speed');
-  gui.add(settings, 'numPoints', 1, 500).name('Points').onChange(setupPoints);
-  gui.add(settings, 'attractor', {Lorenz: lorenzAttractor}).name("Attractor").onChange(setupPoints);
+  // This setting does nothing yet
+  gui.add(settings, 'enableTrails').name("Enable Trails?");
+  gui.add(settings, 'dt',  0.001, 0.07).name('Speed');
+  gui.add(settings, 'numPoints', 1, 500).step(1).name('Points').onChange(setupPoints);
+  gui.add(settings, 'attractor', attractors).name("Attractor").onChange(setupPoints);
 }
 
 function onWindowResize() {
@@ -25,6 +30,36 @@ function onWindowResize() {
   renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
+// Sets everything up
+function init() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  renderer = new THREE.WebGLRenderer({
+      canvas: document.querySelector('#can'),
+  });
+  
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.position.setZ(30);
+  camera.position.setY(15);
+  renderer.render(scene, camera);
+  
+  const grid = new THREE.GridHelper(200, 50);
+  scene.add(grid);
+  
+  const controls = new OrbitControls(camera, renderer.domElement);
+
+  window.addEventListener( 'resize', onWindowResize );
+  
+  createGUI();
+  
+  // Generate all the initial points
+  setupPoints();
+  
+  controls.update();
+}
+
+// Create a fresh set of points
 function setupPoints() {
   points.forEach(point => {
     point.geometry.dispose();
@@ -34,8 +69,8 @@ function setupPoints() {
   points = Array(settings.numPoints).fill().map(x => addPoint());
 }
 
-// Adds a new random point to the scene
-function addPoint() {
+// Adds a new 'random' point to the scene
+function addPoint(low = 0.001, high = 0.9) {
   const geometry = new THREE.SphereGeometry(0.25, 24, 24);
 
   // Random hex color
@@ -46,27 +81,10 @@ function addPoint() {
 
   const [x, y, z] = Array(3)
     .fill()
-    .map(() => THREE.MathUtils.randFloat(0.001, 0.9));
+    .map(() => THREE.MathUtils.randFloat(low, high));
 
   point.position.set(x, y, z);
   scene.add(point);
-  return point;
-}
-
-// Updates a point according to the Lorenz Attractor
-//const dt = 0.003
-const rho = 28.0
-const sigma = 10.0
-const beta = 8.0 / 3.0
-function lorenzAttractor(point) {
-  const x = point.position.x;
-  const y = point.position.y;
-  const z = point.position.z;
-
-  point.position.x += (sigma * (y - x)) * settings.dt;
-  point.position.y += (x * (rho - z) - y) * settings.dt;
-  point.position.z += (x * y - beta * z) * settings.dt;
-
   return point;
 }
 
@@ -74,41 +92,11 @@ function lorenzAttractor(point) {
 function animate() {
   requestAnimationFrame(animate);
 
-  points.map(x => settings.attractor(x))
+  points.forEach(x => settings.attractor(x, settings.dt));
 
   renderer.render(scene, camera);
 }
 
 
-
-// Setting everything up
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-const renderer = new THREE.WebGLRenderer({
-    canvas: document.querySelector('#can'),
-});
-
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.setZ(30);
-camera.position.setY(15);
-renderer.render(scene, camera);
-
-// Grid
-const grid = new THREE.GridHelper(200, 50);
-scene.add(grid);
-
-// Camera controls
-const controls = new OrbitControls(camera, renderer.domElement);
-
-createGUI();
-
-window.addEventListener( 'resize', onWindowResize );
-
-// Generate all the initial points
-setupPoints();
-
-// And run it all
-controls.update();
+init()
 animate();
