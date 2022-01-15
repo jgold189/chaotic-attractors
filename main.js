@@ -3,6 +3,7 @@ import { attractors } from './attractors';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 
 let settings = {
@@ -12,13 +13,14 @@ let settings = {
     dt: 0.003
 };
 let points = [];
-let scene, camera, renderer;
+let scene, camera, renderer, stats;
 
 
 function createGUI() {
     const gui = new GUI( { name: 'Settings' } );
     // This setting does nothing yet
     gui.add(settings, 'enableTrails').name("Enable Trails?");
+
     gui.add(settings, 'dt',  0.001, 0.07).name('Speed');
     gui.add(settings, 'numPoints', 1, 500).step(1).name('Points').onChange(setupPoints);
     gui.add(settings, 'attractor', attractors).name("Attractor").onChange(setupPoints);
@@ -48,6 +50,9 @@ function init() {
     scene.add(grid);
     
     const controls = new OrbitControls(camera, renderer.domElement);
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom)
 
     window.addEventListener( 'resize', onWindowResize );
     
@@ -95,6 +100,7 @@ function animate() {
     points.forEach(x => settings.attractor(x, settings.dt));
 
     renderer.render(scene, camera);
+    stats.update();
 }
 
 

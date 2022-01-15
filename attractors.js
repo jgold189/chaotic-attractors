@@ -1,7 +1,7 @@
 export const attractors = {
     'Lorenz': lorenzAttractor,
-    'Chen (Multiscroll)': chenAttractor,
-    'Lu Chen (Multiscroll)': luChenAttractor,
+    'Chen': chenAttractor,
+    'Lu Chen': luChenAttractor,
     'Rossler': rosslerAttractor, 
 };
 
