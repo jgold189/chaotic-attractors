@@ -1,0 +1,23 @@
+name: Build and deploy main to github pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build and deploy main
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2.1.5
+
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ~/node_modules
+          key: cache-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install and build
+        run: sh deploy.sh
